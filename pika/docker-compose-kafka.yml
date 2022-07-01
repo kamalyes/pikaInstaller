@@ -1,0 +1,60 @@
+version: "2.1"
+services:
+  zookeeper:
+    image: zookeeper:${PK_ZOOKEEPER_VERSION}
+    container_name: zookeeper
+    healthcheck:
+      test: ["CMD", "zkServer.sh", "version"]
+      interval: 6s
+      timeout: 10s
+      retries: 20
+    volumes:
+      - 'pika-zookeeper-data:/bitnami'
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: 'yes'
+    restart: always
+    networks:
+      - pika-network
+  kafka:
+    image: ubuntu/kafka:${PK_KAFKA_VERSION}
+    container_name: kafka
+    ports:
+      - '${PK_KAFKA_PORT}:${PK_KAFKA_PORT}'
+    healthcheck:
+      test: ["CMD", "kafka-consumer-groups.sh", "--bootstrap-server", "localhost:9093", "--list"]
+      interval: 6s
+      timeout: 10s
+      retries: 20
+    restart: always
+    volumes:
+      - 'pika-kafka-data:/bitnami'
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_LISTENERS: INTERNAL://:9093,EXTERNAL://:${PK_KAFKA_PORT}
+      KAFKA_CFG_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,EXTERNAL://${PK_KAFKA_HOST}:${PK_KAFKA_PORT}
+      KAFKA_CFG_LOG_RETENTION_HOURS: 64
+      KAFKA_CFG_MAX_REQUEST_SIZE: 52428800
+      KAFKA_CFG_MESSAGE_MAX_BYTES: 52428800
+      KAFKA_CFG_REPLICA_FETCH_MAX_BYTES: 52428800
+      KAFKA_CFG_FETCH_MESSAGE_MAX_BYTES: 52428800
+      KAFKA_CFG_PARTITION_FETCH_BYTES: 52428800
+      FORMAT_MESSAGES_PATTERN_DISABLE_LOOKUPS: 'true'
+    depends_on:
+      - zookeeper
+    networks:
+      - pika-network
+
+volumes:
+  pika-zookeeper-data:
+    driver_opts:
+      type: none
+      device: ${PK_BASE}/data/zookeeper
+      o: bind
+  pika-kafka-data:
+    driver_opts:
+      type: none
+      device: ${PK_BASE}/data/kafka
+      o: bind

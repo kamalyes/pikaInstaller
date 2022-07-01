@@ -1,0 +1,33 @@
+version: "2.1"
+services:
+  mysql:
+    image: mysql:${PK_MYSQL_VERSION}
+    container_name: mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${PK_MYSQL_PASSWORD}"]
+      interval: 6s
+      timeout: 5s
+      retries: 10
+    environment:
+      MYSQL_DATABASE: ${PK_MYSQL_DB}
+      MYSQL_ROOT_PASSWORD: ${PK_MYSQL_PASSWORD}
+    ports:
+      - 3307:3306
+    volumes:
+      - ${PK_BASE}/conf/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ${PK_BASE}/bin/mysql:/docker-entrypoint-initdb.d/
+      - pika-mysql-data:/var/lib/mysql
+    networks:
+      - pika-network
+    restart: always
+#  pika-server:
+#    depends_on:
+#      mysql:
+#        condition: service_healthy
+
+volumes:
+  pika-mysql-data:
+    driver_opts:
+      type: none
+      device: ${PK_BASE}/data/mysql
+      o: bind

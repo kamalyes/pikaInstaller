@@ -1,0 +1,30 @@
+version: "2.1"
+services:
+  redis:
+    image: redis:${PK_REDIS_VERSION}
+    container_name: redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 6s
+      timeout: 5s
+      retries: 10
+    ports:
+      - ${PK_REDIS_PORT}:6379
+    volumes:
+      - ${PK_BASE}/conf/redis.conf:/etc/redis/redis.conf
+      - pika-redis-data:/data
+    command: redis-server /etc/redis/redis.conf --requirepass ${PK_REDIS_PASSWORD}
+    networks:
+      - pika-network
+    restart: always
+#  pika-server:
+#    depends_on:
+#      redis:
+#        condition: service_healthy
+
+volumes:
+  pika-redis-data:
+    driver_opts:
+      type: none
+      device: ${PK_BASE}/data/redis
+      o: bind

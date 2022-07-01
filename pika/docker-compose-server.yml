@@ -1,0 +1,27 @@
+version: "2.1"
+services:
+  pika-server:
+    build:
+      context: ../
+      dockerfile: devops/Dockerfile
+      args:
+        buildno: 1
+    container_name: pika-server
+    ports:
+      - "7777:7777"
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+    command: bash -c '/${PK_BASE}/.env/wait-for-it.sh ${BASE_NAME}_mysql:3306 -- /${PK_BASE}/.env/wait-for-it.sh pika_redis:6379 -- /${PK_BASE}/venv/bin/supervisord -c /${PK_BASE}/.env/supervisor.conf'
+    healthcheck:
+      test: ["CMD", "nc", "-zv", "localhost", "8081"]
+      interval: 6s
+      timeout: 10s
+      retries: 20
+    volumes:
+      - pika-conf:/opt/pika/conf
+      - pika-logs:/opt/pika/logs
+      - pika-data:/opt/pika/data
+#    mem_limit: 1024m
+    networks:
+      - pika-network
